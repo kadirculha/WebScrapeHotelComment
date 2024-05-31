@@ -1,0 +1,10 @@
+pandas 
+numpy
+matplotlib
+seaborn
+bs4
+requests
+nltk
+openai
+python-dotenv==1.0.0
+lxml
