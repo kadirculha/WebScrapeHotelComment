@@ -1,1 +1,6 @@
 /.venv
+data/filtered_hotel_review_links.csv
+data/filtered_hotel_review_links2.csv
+data/hotels_with_links.csv
+data/hotels_with_links2.csv
+data/review.json
