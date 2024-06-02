@@ -33,14 +33,41 @@ def fetch_html(url, user_agents):
         "Accept-Language": "en-US,en;q=0.9",
         "Referer": "https://www.google.com/",
     }
+    max_retries = 35
+    retries = 0
+    while retries < max_retries:
+        try:
+            proxy = proxy_generator()
+            response = requests.get(url=url, proxies=proxy, headers=headers, timeout=20)
+            logging.info(f"Status Code: {response.status_code}")
+            response.raise_for_status()
+            return response.content
+        except:
+            logging.error(f"Error fetching HTML from URL: {url}")
+        retries += 1
+    logging.error(f"Failed to fetch HTML after {max_retries} retries.")
+    return None
 
-    try:
-        response = requests.get(url=url, headers=headers, timeout=10)
-        logging.info(f"Status Code: {response.status_code}")
-        response.raise_for_status()
-        return response.content
-    except:
-        logging.error(f"Error fetching HTML from URL: {url}")
+
+def proxy_generator():
+    """Generate a random proxy from sslproxies.org."""
+    response = requests.get("https://sslproxies.org/")
+    soup = bs(response.content, 'html.parser')
+    proxies = soup.find_all("tbody")[0].find_all("tr")
+    proxies_array = []
+
+    for i in proxies:
+        try:
+            ip = i.find_all("td")[0].text
+            port = i.find_all("td")[1].text
+            proxies_array.append({"https": f"http://{ip}:{port}"})
+        except Exception as e:
+            logging.error(f"Error parsing proxy: {e}")
+
+    if proxies_array:
+        return random.choice(proxies_array)
+    else:
+        logging.error("No valid proxies found.")
         return None
 
 
@@ -153,7 +180,7 @@ def scrape_reviews(hotel_df, output_path):
             logging.info(f"Hotel Name: {row['name']} Count: {(i + 1) * 5}")
             logging.info(f"Review url: {url}")
             logging.info(f"Review: {reviews}")
-            logging.info(5*"----------------------------------------------------------------")
+            logging.info(5 * "--------------------------------------------------")
             if reviews:
                 text.extend(reviews)
                 hotel_review = {"name": row["name"], "review_list": reviews}
