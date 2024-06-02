@@ -7,16 +7,17 @@ import requests
 import pandas as pd
 from bs4 import BeautifulSoup as bs
 import logging
+from config import Configurator
 from requests.exceptions import Timeout
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
+cfg = Configurator()
 # Configuration
-USER_AGENTS_PATH = "data/user-agents.json"
-HOTEL_DF_PATH = "data/filtered_hotel_review_links.csv"
-REVIEWS_OUTPUT_PATH = "data/review.json"
-HOTELS_URL = "https://www.tripadvisor.com.tr/Hotels-g297962-Antalya_Turkish_Mediterranean_Coast-Hotels.html"
+USER_AGENTS_PATH = cfg.get_user_agents_path()
+HOTEL_DF_PATH = cfg.get_hotel_df_path()
+REVIEWS_OUTPUT_PATH = cfg.get_out_path()
+# HOTELS_URL = "https://www.tripadvisor.com.tr/Hotels-g297962-Antalya_Turkish_Mediterranean_Coast-Hotels.html"
 
 
 def get_user_agents(path):
@@ -33,12 +34,12 @@ def fetch_html(url, user_agents):
         "Accept-Language": "en-US,en;q=0.9",
         "Referer": "https://www.google.com/",
     }
-    max_retries = 35
+    max_retries = 30
     retries = 0
     while retries < max_retries:
         try:
             proxy = proxy_generator()
-            response = requests.get(url=url, proxies=proxy, headers=headers, timeout=20)
+            response = requests.get(url=url, proxies=proxy, headers=headers, timeout=15)
             logging.info(f"Status Code: {response.status_code}")
             response.raise_for_status()
             return response.content
@@ -149,28 +150,26 @@ def get_all_dynamic_links(hotel_df):
     return results
 
 
-def create_hotel_df(user_agents_path, output_path):
-    """Create a dataframe of hotels with their dynamic review links."""
-    user_agents = get_user_agents(user_agents_path)
-    response = fetch_html(url=HOTELS_URL, user_agents=user_agents)
-
-    if response:
-        hotels = get_button_hrefs(parse_html(response))
-        hotel_review_links = get_dynamic_links(hotels)
-        hotel_df = get_names_and_count(parse_html(response))
-        hotel_df["review_link"] = hotel_review_links
-        hotel_df["dynamic_links"] = get_all_dynamic_links(hotel_df)
-        hotel_df.to_csv(output_path, index=False)
-    else:
-        logging.error("Failed to fetch hotel data.")
+# def create_hotel_df(user_agents_path, output_path):
+#     """Create a dataframe of hotels with their dynamic review links."""
+#     user_agents = get_user_agents(user_agents_path)
+#     response = fetch_html(url=HOTELS_URL, user_agents=user_agents)
+#
+#     if response:
+#         hotels = get_button_hrefs(parse_html(response))
+#         hotel_review_links = get_dynamic_links(hotels)
+#         hotel_df = get_names_and_count(parse_html(response))
+#         hotel_df["review_link"] = hotel_review_links
+#         hotel_df["dynamic_links"] = get_all_dynamic_links(hotel_df)
+#         hotel_df.to_csv(output_path, index=False)
+#     else:
+#         logging.error("Failed to fetch hotel data.")
 
 
 def scrape_reviews(hotel_df, output_path):
     """Scrape reviews for each hotel and save them to a JSON file."""
     hotel_df["dynamic_links"] = hotel_df["dynamic_links"].apply(ast.literal_eval)
     hotel_df["filtered_links"] = hotel_df["filtered_links"].apply(ast.literal_eval)
-
-    hotel_df = hotel_df[1:]
 
     text_list = []
     for idx, row in hotel_df.iterrows():

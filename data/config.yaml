@@ -1,0 +1,3 @@
+USER_AGENTS_PATH : "data/user-agents.json"
+HOTEL_DF_PATH : "data/filtered_hotel_review_links.csv"
+REVIEWS_OUTPUT_PATH : "data/review.json"
